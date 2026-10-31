@@ -1,4 +1,4 @@
-# Build the personal homepage and publish it to GitHub Pages.
+# Build the personal homepage and publish the generated site to gh-pages.
 name: Deploy Academic Pages template site to Pages
 
 on:
@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
 
 concurrency:
   group: "pages"
@@ -50,21 +49,7 @@ jobs:
           keep_files: false
           user_name: github-actions[bot]
           user_email: 41898282+github-actions[bot]@users.noreply.github.com
-      - name: Inspect and configure GitHub Pages
+      - name: Remove temporary diagnostics branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-        run: |
-          set +e
-          {
-            echo "Current Pages configuration:"
-            gh api repos/${{ github.repository }}/pages
-            echo
-            echo "Attempt to set gh-pages source:"
-            gh api repos/${{ github.repository }}/pages --method PUT --input <(printf '%s' '{"source":{"branch":"gh-pages","path":"/"}}')
-            echo
-            echo "Pages configuration after attempt:"
-            gh api repos/${{ github.repository }}/pages
-          } > /tmp/pages-debug.txt 2>&1
-          gh api repos/${{ github.repository }}/git/ref/heads/diagnostics >/dev/null 2>&1 || gh api repos/${{ github.repository }}/git/refs -f ref=refs/heads/diagnostics -f sha=${{ github.sha }}
-          gh api repos/${{ github.repository }}/contents/pages-debug-${{ github.run_id }}.txt --method PUT -f message="Collect Pages configuration diagnostics" -f content="$(base64 -w0 /tmp/pages-debug.txt)" -f branch=diagnostics
+        run: gh api repos/${{ github.repository }}/git/refs/heads/diagnostics --method DELETE || true
