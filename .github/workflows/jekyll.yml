@@ -50,12 +50,21 @@ jobs:
           keep_files: false
           user_name: github-actions[bot]
           user_email: 41898282+github-actions[bot]@users.noreply.github.com
-      - name: Configure GitHub Pages to serve gh-pages
+      - name: Inspect and configure GitHub Pages
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
         run: |
-          set -euo pipefail
-          gh api repos/${{ github.repository }}/pages --method PUT --input <(printf '%s' '{"source":{"branch":"gh-pages","path":"/"}}') || {
-            gh api repos/${{ github.repository }}/pages --method DELETE || true
-            gh api repos/${{ github.repository }}/pages --method POST --input <(printf '%s' '{"source":{"branch":"gh-pages","path":"/"}}')
-          }
+          set +e
+          {
+            echo "Current Pages configuration:"
+            gh api repos/${{ github.repository }}/pages
+            echo
+            echo "Attempt to set gh-pages source:"
+            gh api repos/${{ github.repository }}/pages --method PUT --input <(printf '%s' '{"source":{"branch":"gh-pages","path":"/"}}')
+            echo
+            echo "Pages configuration after attempt:"
+            gh api repos/${{ github.repository }}/pages
+          } > /tmp/pages-debug.txt 2>&1
+          gh api repos/${{ github.repository }}/git/ref/heads/diagnostics >/dev/null 2>&1 || gh api repos/${{ github.repository }}/git/refs -f ref=refs/heads/diagnostics -f sha=${{ github.sha }}
+          gh api repos/${{ github.repository }}/contents/pages-debug-${{ github.run_id }}.txt --method PUT -f message="Collect Pages configuration diagnostics" -f content="$(base64 -w0 /tmp/pages-debug.txt)" -f branch=diagnostics
