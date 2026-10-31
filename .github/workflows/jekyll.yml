@@ -45,11 +45,14 @@ jobs:
         run: |
           set -euo pipefail
           touch _site/.nojekyll
+          rm -rf /tmp/ljt-homepage-site
+          cp -r _site /tmp/ljt-homepage-site
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch --orphan gh-pages
           git rm -r -q .
-          cp -r _site/. .
+          git clean -fdx
+          cp -r /tmp/ljt-homepage-site/. .
           git add -A
           git commit -m "Deploy personal homepage"
           git push --force "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}" gh-pages:gh-pages
